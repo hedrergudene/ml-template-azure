@@ -161,6 +161,7 @@ Once the environment has been created, permissions for service account have been
 Despite including and end-to-end solution to model design in AML, the following additional features are expected to be developed:
 
 - [ ] Adapt `build_MLTable` function in pipeline job script to replicate Data Asset config file.
+- [ ] `RAPIDS` integration to train ML models using GPU.
 - [ ] Inference endpoint creation.
 - [ ] User-friendly app development.
 - [ ] Live application by using a real IoT device.
