@@ -29,7 +29,7 @@ In this use case, we provide an easy to adapt and scalable approach to implement
 
 The following diagram shows a detailed structure of how a simple ML workflow looks like:
 
-<img src="images/project-outlook.PNG"  width="70%" height="70%" style="display: block; margin: 0 auto">
+<img src="images/project-outlook.PNG"  width="100%" height="100%" style="display: block; margin: 0 auto">
 
 There are several components to be discussed in order to keep track of every step through the workflow:
 
