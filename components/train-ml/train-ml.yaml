@@ -1,0 +1,64 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+
+# General information about the component
+name: train_ml
+display_name: Train ML
+description: A template component to train a supervised learning ML model from a series of available models.
+tags:
+  author: Antonio Zarauz Moreno, CEO @MAIACorp
+  version: 1.0
+
+# Inputs and outputs
+inputs:
+  input_path:
+    type: uri_folder
+    optional: false
+  model_name:
+    type: string
+    optional: false
+  experiment_name:
+    type: string
+    optional: false
+  bayes_config:
+    type: string
+    optional: false
+  n_calls:
+    type: int
+    min: 20
+    max: 200
+    default: 100
+    optional: true
+  n_initial_points:
+    type: int
+    min: 5
+    max: 15
+    default: 10
+    optional: true
+  seed:
+    type: int
+    min: 1
+    max: 9999
+    default: 42
+    optional: true
+outputs:
+  output_model_path:
+    type: uri_folder
+  output_metadata_path:
+    type: uri_folder
+
+# The source code path of it's defined in the code section and when the
+# component is run in cloud, all files from that path will be uploaded
+# as the snapshot of this component
+code: ./
+
+# The environment section contains a docker image and a conda yaml file.
+# The source file is in the sample repository.
+environment:
+  conda_file: ./conda.yaml
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04
+compute: azureml:cpu-cluster
+
+# The command section specifies the command to execute while running
+# this component
+command: python ./main.py --input_path ${{inputs.input_path}} --model_name ${{inputs.model_name}} --experiment_name ${{inputs.experiment_name}} --bayes_config ${{inputs.bayes_config}} $[[--n_calls '${{inputs.n_calls}}']] $[[--n_initial_points '${{inputs.n_initial_points}}']] $[[--seed '${{inputs.seed}}']] --output_model_path ${{outputs.output_model_path}} --output_metadata_path ${{outputs.output_metadata_path}}

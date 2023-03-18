@@ -1,0 +1,53 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+
+# General information about the component
+name: data_ckpt
+display_name: Data checkpoint
+description: A template component to fetch blobs from a container, by agreeing with a regex expression, and create a Data Asset in AzureML.
+tags:
+  author: Antonio Zarauz Moreno, CEO @MAIACorp
+  version: 1.0
+
+# Inputs and outputs
+inputs:
+  input_path:
+    type: uri_folder
+    optional: false
+  subscription_id:
+    type: string
+    optional: false
+  resource_group:
+    type: string
+    optional: false
+  aml_workspace_name:
+    type: string
+    optional: false
+  data_asset_name:
+    type: string
+    optional: false
+  data_asset_description:
+    type: string
+    optional: false
+  target_var:
+    type: string
+    optional: false
+outputs:
+  output_path:
+    type: uri_folder
+
+# The source code path of it's defined in the code section and when the
+# component is run in cloud, all files from that path will be uploaded
+# as the snapshot of this component
+code: ./
+
+# The environment section contains a docker image and a conda yaml file.
+# The source file is in the sample repository.
+environment:
+  conda_file: ./conda.yaml
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04
+compute: azureml:cpu-cluster
+
+# The command section specifies the command to execute while running
+# this component
+command: python ./main.py --input_path ${{inputs.input_path}} --subscription_id ${{inputs.subscription_id}} --resource_group ${{inputs.resource_group}} --aml_workspace_name ${{inputs.aml_workspace_name}} --data_asset_name ${{inputs.data_asset_name}} --data_asset_description ${{inputs.data_asset_description}} --target_var ${{inputs.target_var}} --output_path ${{outputs.output_path}}

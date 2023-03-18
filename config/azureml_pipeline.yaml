@@ -1,0 +1,60 @@
+azure:
+  subscription_id : 'XXXXXX'
+  resource_group : 'XXXXXX'
+  aml_workspace_name : 'XXXXXX'
+  computing:
+    cpu_cluster_aml_id : 'cpu-cluster'
+    gpu_cluster_aml_id : 'gpu-cluster'
+  experiment_name : 'azureml_pipeline_template'
+data:
+  storage_account_name : 'XXXXXX'
+  container_name : 'XXXXXX'
+  data_asset_name: 'azureml_iot'
+  data_asset_description: 'Data checkpoint for project azureml_pipeline_template'
+  regex_pattern: '*.csv'
+  input_vars:
+    float:
+      values:
+      - 'Temperature[C]'
+      - 'Humidity[%]'
+      - 'TVOC[ppb]'
+      - 'eCO2[ppm]'
+
+#    int:
+#      values:
+#        - 'Fire Alarm'
+    
+#    datetime:
+#      values:
+#        - 'date_col'
+#      formats:
+#        - '%Y-%m-%d'
+#  
+    boolean:
+      values:
+        - 'Fire Alarm'
+      mismatch_as: error
+      true_values: ['yes', 'true', '1']
+      false_values: ['no', 'false', '0']
+  target_var: 'Fire Alarm'
+train:
+  model_name: 'LGBMClassifier'
+  bayesian_search:
+    n_calls: 100
+    n_initial_points: 10
+    params:
+      real:
+        learning_rate:
+          - min: 0.0001
+          - max: 0.1
+        reg_alpha:
+          - min: 0.
+          - max: 0.25
+        reg_lambda:
+          - min: 0.
+          - max: 0.25
+      integer:
+        n_estimators:
+          - min: 25
+          - max: 500
+  seed : 123

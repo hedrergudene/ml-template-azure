@@ -1,0 +1,36 @@
+$schema: https://azuremlschemas.azureedge.net/latest/MLTable.schema.json
+type: mltable
+
+# Supported paths include:
+# local: ./<path>
+# blob: wasbs://<container_name>@<account_name>.blob.core.windows.net/<path>
+# Public http(s) server: https://<url>
+# ADLS gen2: abfss://<file_system>@<account_name>.dfs.core.windows.net/<path>/
+# Datastore: azureml://subscriptions/<subid>/resourcegroups/<rg>/workspaces/<ws>/datastores/<datastore_name>/paths/<path>
+
+paths:
+  - pattern:  wasbs://aml-pipelines@staceu2exefd04.blob.core.windows.net/*.csv # glob all the csv files in the folder where MLTable is co-located with csv files
+
+transformations:
+    - read_delimited:
+        encoding: utf8
+        header: all_files_same_headers
+        delimiter: ","
+        include_path_column: true
+        empty_as_string: false
+    - keep_columns: ['Temperature[C]', 'Humidity[%]', 'TVOC[ppb]', 'eCO2[ppm]', 'Fire Alarm']
+    - convert_column_types:
+        - columns: 'Temperature[C]'
+          column_type: float
+        - columns: 'Humidity[%]'
+          column_type: float
+        - columns: 'TVOC[ppb]'
+          column_type: int
+        - columns: 'eCO2[ppm]'
+          column_type: int
+        - columns: 'Fire Alarm'
+          column_type:
+            boolean:
+              mismatch_as: error
+              true_values: ["1"]
+              false_values: ["0"]
