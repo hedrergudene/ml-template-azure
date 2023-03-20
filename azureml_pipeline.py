@@ -18,16 +18,7 @@ formatter = log.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 handler.setFormatter(formatter)
 root.addHandler(handler)
 
-# function to write yaml exactly as required
-
-"""
-Simple use:
-mltable_dct_prueba = build_MLTable(config_dct_prueba)
-write_yaml(mltable_dct_prueba, 'mltable_azureml_final.yaml')
-
-""" 
-
-
+# function to write yaml as required por MLTable syntax
 def write_yaml(data, file_path):
     with open(file_path, 'w') as file:
         file.write('$schema: ' + data['$schema'] + '\n')
@@ -160,13 +151,8 @@ def main(
       json.dump(config_dct['train']['bayesian_search']['params'], f)
 
     ## Create MLTable object
-    #mltable_dct = build_MLTable(config_dct)
-    #with open('./components/data_ckpt/input/MLTable', 'w') as f:
-    #    yaml.dump(mltable_dct, f, indent=4, sort_keys=False, default_flow_style=False)
-
-    #new use:
-    #mltable_dct = build_MLTable(config_dct)
-    #write_yaml(mltable_dct, 'mltable_azureml_final.yaml') -- check name
+    mltable_dct = build_MLTable(config_dct)
+    write_yaml(mltable_dct, './components/data_ckpt/input/MLTable')
 
     # Get a handle to workspace
     ml_client = MLClient(
