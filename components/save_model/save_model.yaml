@@ -7,7 +7,7 @@ display_name: Save model
 description: A template component to create a model checkpoint in Azure ML Model Registry.
 tags:
   author: Antonio Zarauz Moreno, CEO @MAIACorp
-  version: 1.0
+  version: "1"
 
 # Inputs and outputs
 inputs:

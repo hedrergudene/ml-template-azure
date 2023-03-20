@@ -10,7 +10,6 @@ data:
   storage_account_name : 'XXXXXX'
   container_name : 'XXXXXX'
   data_asset_name: 'azureml_iot'
-  data_asset_description: 'Data checkpoint for project azureml_pipeline_template'
   regex_pattern: '*.csv'
   input_vars:
     float:
@@ -32,11 +31,11 @@ data:
 #  
     boolean:
       values:
-        - 'Fire Alarm'
+        - 'Fire_Alarm'
       mismatch_as: error
       true_values: ['yes', 'true', '1']
       false_values: ['no', 'false', '0']
-  target_var: 'Fire Alarm'
+  target_var: 'Fire_Alarm'
 train:
   model_name: 'LGBMClassifier'
   bayesian_search:

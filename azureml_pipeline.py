@@ -1,6 +1,7 @@
 # Libraries
 import yaml
 import sys
+import json
 import logging as log
 from azure.identity import DefaultAzureCredential
 from azure.ai.ml import MLClient, load_component
@@ -118,6 +119,10 @@ def main(
     with open(config_path, 'r') as f:
         config_dct = yaml.load(f, Loader=yaml.FullLoader)
     
+    ## Create opt_config.json object
+    with open('./components/train_ml/input/opt_config.json', 'w') as f:
+      json.dump(config_dct['train']['bayesian_search']['params'], f)
+
     ## Create MLTable object
     #mltable_dct = build_MLTable(config_dct)
     #with open('./components/data_ckpt/input/MLTable', 'w') as f:
@@ -149,22 +154,23 @@ def main(
         default_compute=config_dct['azure']['computing']['cpu_cluster_aml_id'],
     )
     def azure_ml_pipeline():
-        """End to end NER model training using HuggingFace framework"""
+        """End to end ML project"""
         # Read 
         data_ckpt_node = data_ckpt_comp(
             subscription_id=config_dct['azure']['subscription_id'],
             resource_group=config_dct['azure']['resource_group'],
             aml_workspace_name=config_dct['azure']['aml_workspace_name'],
             data_asset_name=config_dct['data']['data_asset_name'],
-            data_asset_description=config_dct['data']['data_asset_description'],
             target_var=config_dct['data']['target_var']
         )
         # Train
         train_ml_node = train_ml_comp(
             input_path=data_ckpt_node.outputs.output_path,
+            subscription_id=config_dct['azure']['subscription_id'],
+            resource_group=config_dct['azure']['resource_group'],
+            aml_workspace_name=config_dct['azure']['aml_workspace_name'],
             model_name=config_dct['train']['model_name'],
             experiment_name=config_dct['azure']['experiment_name'],
-            bayes_config=str(config_dct['train']['bayesian_search']['params']),
             n_calls=config_dct['train']['bayesian_search']['n_calls'],
             n_initial_points=config_dct['train']['bayesian_search']['n_initial_points'],
             seed=config_dct['train']['seed']

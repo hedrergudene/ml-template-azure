@@ -26,7 +26,6 @@ def main(
     resource_group,
     aml_workspace_name,
     data_asset_name,
-    data_asset_description,
     target_var,
     output_path
 ):
@@ -41,7 +40,7 @@ def main(
     my_data = Data(
         path=f'./input',
         type=AssetTypes.MLTABLE,
-        description=data_asset_description,
+        #description=data_asset_description,
         name=data_asset_name,
         tags={'target_var': target_var}
         #version='<version>'

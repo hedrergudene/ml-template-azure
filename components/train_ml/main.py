@@ -80,9 +80,11 @@ def compute_metrics(inputs:List[np.array], targets:List[np.array]):
 # Main method. Fire automatically allign method arguments with parse commands from console
 def main(
     input_path,
+    subscription_id,
+    resource_group,
+    aml_workspace_name,
     model_name,
     experiment_name,
-    bayes_config,
     n_calls,
     n_initial_points,
     seed,
@@ -117,24 +119,52 @@ def main(
     
     # Import data from data asset
     log.info(f"Fetch data from Azure Data Asset:")
+    # Check if given credential can get token successfully
+    credential = DefaultAzureCredential()
+    credential.get_token("https://management.azure.com/.default")
     ## MLClient
-    ml_client =  MLClient.from_config(credential=DefaultAzureCredential())
+    try:
+        ml_client = MLClient.from_config(credential=credential)
+    except Exception as ex:
+        # NOTE: Update following workspace information to contain
+        #       your subscription ID, resource group name, and workspace name
+        client_config = {
+            "subscription_id": subscription_id,
+            "resource_group": resource_group,
+            "workspace_name": aml_workspace_name
+        }
+
+        # write and reload from config file
+        config_path = "../.azureml/config.json"
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        with open(config_path, "w") as fo:
+            fo.write(json.dumps(client_config))
+        ml_client = MLClient.from_config(credential=credential, path=config_path)
+    ## Model (either classification or regression)
+    try:
+        model = getattr(sys.modules[__name__], model_name)
+    except AttributeError:
+        log.error("model_name parameter is not available.")
+        raise AttributeError("model_name parameter is not available.")
+    is_regression = True if model_name not in ['LGBMClassifier', 'SVC', 'RandomForestClassifier'] else False
     ##Fetch previously created data asset
     data_asset = ml_client.data.get(name=data_asset_dct['name'], version=data_asset_dct['version'])
+    target_var = data_asset.tags.get('target_var')
     tbl = mltable.load(f'azureml:/{data_asset.id}')
     ## Convert to pd.DataFrame object
     df = tbl.to_pandas_dataframe()
     ## Global statistics of data
     mu_X = np.mean(df.loc[:, ~df.columns.isin([target_var])].values, axis=0)
     sigma_X = np.std(df.loc[:, ~df.columns.isin([target_var])].values, axis=0)
-    mu_y = np.mean(df[target_var].values)
-    sigma_y = np.std(df[target_var].values)
+    mu_y = np.mean(df[target_var].values) if is_regression else 0
+    sigma_y = np.std(df[target_var].values) if is_regression else 1
     ## Convert target variable into `int` in case it only contains 0-1 values
     target_var = data_asset.tags['target_var']
     if df[target_var].dtype=='bool': df[target_var] = df[target_var].astype('int')
     # define the space of hyperparameters to search
     log.info(f"Setting up hyperparameter space:")
-    bayes_dct = eval(bayes_config)
+    with open('./input/opt_config.json', 'r') as f:
+        bayes_dct = json.load(f)
     search_space = []
     if bayes_dct.get('real') is not None:
         for name, values in bayes_dct.get('real').items():
@@ -145,13 +175,6 @@ def main(
     
     # Training
     log.info(f"Start fitter training:")
-    ## Model (either classification or regression)
-    try:
-        model = getattr(sys.modules[__name__], model_name)
-    except AttributeError:
-        log.error("model_name parameter is not available.")
-        raise AttributeError("model_name parameter is not available.")
-    is_regression = True if model_name not in ['LGBMClassifier', 'SVC', 'RandomForestClassifier'] else False
     ## Function to apply param configuration to specific run
     @use_named_args(search_space)
     def evaluate_model(**params):
@@ -200,6 +223,7 @@ def main(
         random_state=seed
     )
     # Fetch best metrics
+    log.info(f"Fetch best metrics from logs:")
     for elem in os.listdir('./output_experiment'):
         _, extension = os.path.splitext(elem)
         if extension!='.json':
@@ -211,28 +235,34 @@ def main(
             break
 
     # MLFlow session
+    log.info(f"Log metrics, artifacts and parameters:")
     experiment_id = mlflow.set_experiment(experiment_name)
-    with mlflow.start_run(experiment_id = experiment_id) as run:
-        ## Metrics
-        mlflow.log_metrics(metrics_dct)
-        ## Plot
-        plot_df = pd.DataFrame(np.concatenate([result.x_iters, result.func_vals[:,None]], axis=1), columns=([x.name for x in search_space] + ['oof_catcross']))
-        fig = px.parallel_coordinates(plot_df, color="oof_catcross",
-                                     color_continuous_scale=px.colors.diverging.Tealrose,
-                                     color_continuous_midpoint=np.mean(result.func_vals))
-        fig.write_html("./output_experiment/plot.html")
-        mlflow.log_artifact({'Parallel plot':"./output_experiment/plot.html"})
+    mlflow_run = mlflow.start_run()
+    run_id = mlflow_run.info.run_id
+    ## Metrics
+    mlflow.log_metrics({k:eval(v) for k,v in metrics_dct.items()})
+    ## Plot
+    plot_df = pd.DataFrame(np.concatenate([result.x_iters, result.func_vals[:,None]], axis=1), columns=([x.name for x in search_space] + ['oof_catcross']))
+    fig = px.parallel_coordinates(plot_df, color="oof_catcross",
+                                    color_continuous_scale=px.colors.diverging.Tealrose,
+                                    color_continuous_midpoint=np.mean(result.func_vals))
+    fig.write_html("./output_experiment/plot.html")
+    mlflow.log_artifact("./output_experiment/plot.html")
+    # End run in FINISHED status
+    mlflow.end_run()
 
     # Train model on the entire dataset
+    log.info(f"Train model on the entire dataset:")
     X = (df.loc[:, ~df.columns.isin([target_var])].values-mu_X)/sigma_X
     y = (df.loc[:, target_var].values-mu_y)/sigma_y
     model = getattr(sys.modules[__name__], model_name)(**{k: eval(v) for k,v in exp_dct['params'].items()})
     model.fit(X, y)
-
     # Generate model output
+    log.info(f"Dump model:")
     joblib.dump(model, os.path.join(output_model_path, 'pretrained_model.joblib'))
     # Generate metadata output
-    framework_name = re.findall("\'(.*?)\'",str(getattr(sys.modules[__name__], 'RandomForestClassifier')))[0].split('.')[0]
+    framework_name = re.findall("\'(.*?)\'",str(getattr(sys.modules[__name__], model_name)))[0].split('.')[0]
+    log.info(f"Dump metadata:")
     with open(os.path.join(output_metadata_path, 'metadata.json'), 'w', encoding='utf8') as f:
         json.dump({
             **{'params':{k:eval(v) for k,v in exp_dct['params'].items()}},

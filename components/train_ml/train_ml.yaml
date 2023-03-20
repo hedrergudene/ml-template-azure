@@ -7,12 +7,21 @@ display_name: Train ML
 description: A template component to train a supervised learning ML model from a series of available models.
 tags:
   author: Antonio Zarauz Moreno, CEO @MAIACorp
-  version: 1.0
+  version: "1"
 
 # Inputs and outputs
 inputs:
   input_path:
     type: uri_folder
+    optional: false
+  subscription_id:
+    type: string
+    optional: false
+  resource_group:
+    type: string
+    optional: false
+  aml_workspace_name:
+    type: string
     optional: false
   model_name:
     type: string
@@ -20,23 +29,20 @@ inputs:
   experiment_name:
     type: string
     optional: false
-  bayes_config:
-    type: string
-    optional: false
   n_calls:
-    type: int
+    type: integer
     min: 20
     max: 200
     default: 100
     optional: true
   n_initial_points:
-    type: int
+    type: integer
     min: 5
     max: 15
     default: 10
     optional: true
   seed:
-    type: int
+    type: integer
     min: 1
     max: 9999
     default: 42
@@ -61,4 +67,4 @@ compute: azureml:cpu-cluster
 
 # The command section specifies the command to execute while running
 # this component
-command: python ./main.py --input_path ${{inputs.input_path}} --model_name ${{inputs.model_name}} --experiment_name ${{inputs.experiment_name}} --bayes_config ${{inputs.bayes_config}} $[[--n_calls '${{inputs.n_calls}}']] $[[--n_initial_points '${{inputs.n_initial_points}}']] $[[--seed '${{inputs.seed}}']] --output_model_path ${{outputs.output_model_path}} --output_metadata_path ${{outputs.output_metadata_path}}
+command: python ./main.py --input_path ${{inputs.input_path}} --subscription_id ${{inputs.subscription_id}} --resource_group ${{inputs.resource_group}} --aml_workspace_name ${{inputs.aml_workspace_name}} --model_name ${{inputs.model_name}} --experiment_name ${{inputs.experiment_name}} $[[--n_calls '${{inputs.n_calls}}']] $[[--n_initial_points '${{inputs.n_initial_points}}']] $[[--seed '${{inputs.seed}}']] --output_model_path ${{outputs.output_model_path}} --output_metadata_path ${{outputs.output_metadata_path}}

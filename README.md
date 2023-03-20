@@ -42,6 +42,8 @@ There are several components to be discussed in order to keep track of every ste
 
 ## Training data
 
+### Data Assets (`MLTable`)
+
 An ideal resource for storing, managing and distributing data are [Data Assets](https://learn.microsoft.com/en-us/azure/machine-learning/concept-data). These allow to:
 
 * Create an object that is robust to changes (for example, a column name changes): All consumers of the data must independently update their Python code. Other examples can involve type changes, added / removed columns, encoding change, etc.
@@ -63,8 +65,14 @@ We recommend co-location of the `MLTable` file with the underlying data, for exa
 
 Co-location of the `MLTable` file with the data ensures a self-contained artifact that stores all needed resources in that one folder, regardless of whether that folder is stored on your local drive, in your cloud store, or on a public http server. Plus, real-life environments are not static, therefore this practice ensures that datacheckpoints are always up to date.
 
-Since the `MLTable` will co-locate with the data, the paths defined in the `MLTable` file should be relative to the location of the `MLTable` file. In the `./setup` folder, you will find the `smoke_detection_iot.csv` file, which has been used for testing purposes. 
+Since the `MLTable` will co-locate with the data, the paths defined in the `MLTable` file should be relative to the location of the `MLTable` file. In the `./setup` folder, you will find the `smoke_detection_iot.csv` file, which has been used for testing purposes.
 
+### Assumptions
+
+This use case is prepared for supervised learning problems, where the following assumptions are made over the data:
+
+* Dataset only contain numerical features; categorical ones must be preprocessed in advanced (see `call-for-contributions` section).
+* Preprocessing performed for features and target variable (if it is a regression scenario) is a normal standarisation. This might change depending on your specific domain, where other possible transformations are Tweedie and binary crossentropy losses for highly-concentrated distributions.
 
 
 ## Components
@@ -161,6 +169,7 @@ Once the environment has been created, permissions for service account have been
 Despite including and end-to-end solution to model design in AML, the following additional features are expected to be developed:
 
 - [ ] Adapt `build_MLTable` function in pipeline job script to replicate Data Asset config file.
+- [ ] Make preprocessing flexible enough to ingest categorical features, and either perform label or one-hot encoding.
 - [ ] `RAPIDS` integration to train ML models using GPU.
 - [ ] Inference endpoint creation.
 - [ ] User-friendly app development.

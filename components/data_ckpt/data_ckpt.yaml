@@ -7,13 +7,10 @@ display_name: Data checkpoint
 description: A template component to fetch blobs from a container, by agreeing with a regex expression, and create a Data Asset in AzureML.
 tags:
   author: Antonio Zarauz Moreno, CEO @MAIACorp
-  version: 1.0
+  version: "1"
 
 # Inputs and outputs
 inputs:
-  input_path:
-    type: uri_folder
-    optional: false
   subscription_id:
     type: string
     optional: false
@@ -24,9 +21,6 @@ inputs:
     type: string
     optional: false
   data_asset_name:
-    type: string
-    optional: false
-  data_asset_description:
     type: string
     optional: false
   target_var:
@@ -50,4 +44,4 @@ compute: azureml:cpu-cluster
 
 # The command section specifies the command to execute while running
 # this component
-command: python ./main.py --input_path ${{inputs.input_path}} --subscription_id ${{inputs.subscription_id}} --resource_group ${{inputs.resource_group}} --aml_workspace_name ${{inputs.aml_workspace_name}} --data_asset_name ${{inputs.data_asset_name}} --data_asset_description ${{inputs.data_asset_description}} --target_var ${{inputs.target_var}} --output_path ${{outputs.output_path}}
+command: python ./main.py --subscription_id ${{inputs.subscription_id}} --resource_group ${{inputs.resource_group}} --aml_workspace_name ${{inputs.aml_workspace_name}} --data_asset_name ${{inputs.data_asset_name}} --target_var ${{inputs.target_var}} --output_path ${{outputs.output_path}}
