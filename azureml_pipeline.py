@@ -17,6 +17,42 @@ formatter = log.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 handler.setFormatter(formatter)
 root.addHandler(handler)
 
+# function to write yaml exactly as required
+
+"""
+Simple use:
+mltable_dct_prueba = build_MLTable(config_dct_prueba)
+write_yaml(mltable_dct_prueba, 'mltable_azureml_final.yaml')
+
+""" 
+
+
+def write_yaml(data, file_path):
+    with open(file_path, 'w') as file:
+        file.write('$schema: ' + data['$schema'] + '\n')
+        file.write('paths:\n')
+        file.write('- pattern: ' + data['paths'][0]['pattern'] + '\n')
+        file.write('transformations:\n')
+        file.write('- read_delimited:\n')
+        file.write(f'    delimiter: \'{data["transformations"][0]["read_delimited"]["delimiter"]}\'\n')
+        for key, value in data['transformations'][0]['read_delimited'].items():
+            if key != 'delimiter':
+                file.write(f'    {key}: {value}\n')
+        file.write('- keep_columns: ' + str(data['transformations'][1]['keep_columns']) + '\n')
+        file.write('- convert_column_types:\n')
+        for col in data['transformations'][2]['convert_column_types']:
+            file.write(f'    - columns: \'{col}\'\n')
+            column_type = data['transformations'][2]['convert_column_types'][col]
+            if isinstance(column_type, str):
+                file.write(f'      column_type: {column_type}\n')
+            elif isinstance(column_type, dict):
+                file.write(f'      boolean:\n')
+                for key, value in column_type['boolean'].items():
+                    if isinstance(value, str):
+                        file.write(f'        {key}: \'{value}\'\n')
+                    elif isinstance(value, list):
+                        file.write(f'        {key}: {str(value)}\n')
+        file.write('type: ' + data['type'] + '\n')
 
 # Function to build MLTable object
 def build_MLTable(config_dct):
@@ -122,6 +158,10 @@ def main(
     #mltable_dct = build_MLTable(config_dct)
     #with open('./components/data_ckpt/input/MLTable', 'w') as f:
     #    yaml.dump(mltable_dct, f, indent=4, sort_keys=False, default_flow_style=False)
+
+    #new use:
+    #mltable_dct = build_MLTable(config_dct)
+    #write_yaml(mltable_dct, 'mltable_azureml_final.yaml') -- check name
 
     # Get a handle to workspace
     ml_client = MLClient(
