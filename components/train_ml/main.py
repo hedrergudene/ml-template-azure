@@ -5,7 +5,7 @@ import json
 import os
 import sys
 from uuid import uuid4
-from typing import List
+from typing import List, Dict
 from pathlib import Path
 import re
 import numpy as np
@@ -19,7 +19,7 @@ import mltable
 import mlflow
 ## Model selection
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, mean_squared_error, mean_absolute_error
 ## Models
 import sklearn
 import lightgbm
@@ -57,7 +57,7 @@ def get_file(f):
             return (f"More than one file was found in directory: {','.join(files)}.", 500)
 
 # Function used to compute evaluation metrics
-def compute_metrics(inputs:List[np.array], targets:List[np.array]):
+def compute_metrics(inputs:List[np.array], targets:List[np.array], is_regression:bool):
     # Formateamos salida de modelo
     y_true = np.concatenate(targets)
     y_pred_proba = np.concatenate(inputs, axis=0)
@@ -65,16 +65,24 @@ def compute_metrics(inputs:List[np.array], targets:List[np.array]):
     y_pred = np.argmax(y_pred_proba, axis=-1)
     y_pred_onehot = np.zeros(shape=(y_pred.size, y_pred.max() + 1))
     y_pred_onehot[np.arange(y_pred.size), y_pred] = 1
-    # accuracy
-    acc = accuracy_score(y_true, y_pred)
-    # precision-recall
-    pr = precision_score(y_true, y_pred, average = 'weighted')
-    rc = recall_score(y_true, y_pred, average = 'weighted')
-    # f1 score
-    f1 = f1_score(y_true, y_pred, average = 'weighted')
-    # Entropía
-    catcross = -np.mean((y_pred_logproba[:,None,:] @ y_pred_onehot[:,:,None]).squeeze())
-    return {'oof_accuracy': acc, 'oof_precision': pr, 'oof_recall': rc, 'oof_f1':f1, 'oof_catcross':catcross}
+    # regression
+    if is_regression:
+        # mse
+        mse = mean_squared_error(y_true, y_pred)
+        # mae
+        mae = mean_absolute_error(y_true, y_pred)
+        return {'oof_mse': mse, 'oof_mae': mae}
+    else:
+        # accuracy
+        acc = accuracy_score(y_true, y_pred)
+        # precision-recall
+        pr = precision_score(y_true, y_pred, average = 'weighted')
+        rc = recall_score(y_true, y_pred, average = 'weighted')
+        # f1 score
+        f1 = f1_score(y_true, y_pred, average = 'weighted')
+        # Entropía
+        catcross = -np.mean((y_pred_logproba[:,None,:] @ y_pred_onehot[:,:,None]).squeeze())
+        return {'oof_accuracy': acc, 'oof_precision': pr, 'oof_recall': rc, 'oof_f1':f1, 'oof_catcross':catcross}
 
 
 # Main method. Fire automatically allign method arguments with parse commands from console
@@ -201,16 +209,16 @@ def main(
             # Compute predictions
             input = model.predict_proba(X_test)
             # Store predictions and labels
-            inputs.append(input)
-            targets.append(target)
+            inputs.append(input*std_y+mean_y)
+            targets.append(target*std_y+mean_y)
         # Calculate metrics from out-of-folder strategy
-        metrics_dct = compute_metrics(inputs, targets)
+        metrics_dct = compute_metrics(inputs, targets, is_regression)
         with open(f'./output_experiment/{str(uuid4())}.json', 'w') as f:
             json.dump({
                 **{'params':{k:str(v) for k,v in params.items()}},
                 **{'metrics':{k:str(v) for k,v in metrics_dct.items()}}
             }, f, indent=4)
-        return metrics_dct['oof_catcross']
+        return metrics_dct['mse'] if is_regression else metrics_dct['oof_catcross']
     
     # Perform optimization
     # Object result contains two methods, "x_iters" with array config values, and "func_vals" with target metric scores.
