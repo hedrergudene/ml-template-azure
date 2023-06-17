@@ -9,7 +9,7 @@ type: mltable
 # Datastore: azureml://subscriptions/<subid>/resourcegroups/<rg>/workspaces/<ws>/datastores/<datastore_name>/paths/<path>
 
 paths:
-  - pattern:  wasbs://aml-pipelines@staceu2exefd04.blob.core.windows.net/*.csv # glob all the csv files in the folder where MLTable is co-located with csv files
+  - pattern:  wasbs://<container_name>@<account_name>.blob.core.windows.net/*.csv # glob all the csv files in the folder where MLTable is co-located with csv files
 
 transformations:
     - read_delimited:

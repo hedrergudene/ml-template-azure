@@ -2,8 +2,8 @@ name: train_ml_conda_env
 channels:
   - defaults
 dependencies:
-  - python=3.7.11
-  - pip=20.0
+  - python=3.10.7
+  - pip=23.2
   - pip:
     - mlflow==1.30.0
     - mldesigner==0.1.0b4
