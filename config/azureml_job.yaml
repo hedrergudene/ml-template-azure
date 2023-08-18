@@ -5,18 +5,16 @@ azure:
   computing:
     cpu_cluster_aml_id : 'cpu-cluster'
     gpu_cluster_aml_id : 'gpu-cluster'
-  experiment_name : 'azureml_pipeline_template'
+  experiment_name : 'azureml_job_template'
   keyvault:
     name: 'XXXXXX'
     decrypt_secret_name: 'XXXXXX'
 data:
-  storage_account_name : 'XXXXXX'
-  container_name : 'XXXXXX'
   data_asset_name: 'azureml_iot'
-  regex_pattern: '*.csv'
   target_var: 'Fire_Alarm'
 
 train:
+  mltable_name: 'XXXXXX'
   model_name: 'LGBMClassifier'
   bayesian_search:
     n_calls: 100

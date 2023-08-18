@@ -67,6 +67,17 @@ Co-location of the `MLTable` file with the data ensures a self-contained artifac
 
 Since the `MLTable` will co-locate with the data, the paths defined in the `MLTable` file should be relative to the location of the `MLTable` file. In the `./setup` folder, you will find the `smoke_detection_iot.csv` file, which has been used for testing purposes.
 
+
+### Encryption
+
+There are multiple scenarios where data access is restricted and additional permissions should be granted. To showcase how an end to end pipeline would take into account data decryption, we introduce two elements:
+
+* A script named `data_encrypt.py` in the `scripts` section.
+* A component named `decrypt_data` in the `components` section.
+
+The former makes use of a **public** keyvault, where as the latter requires a **private** one.
+
+
 ### Assumptions
 
 This use case is prepared for supervised learning problems, where the following assumptions are made over the data:
@@ -148,7 +159,7 @@ For potential integrations with large-scale training, requiring specific use of 
 
 ### Register
 
-Hosting your code in a repository is the best way to track changes and serialise releases. However, there are additional functionalities within the AML ecosystem that allow users to *plug and play* with pipelines. By opening a terminal and running the shell script contained in `./setup` folder, with `<workspace-name>` and `<resource-group-name>` as parameters, an instance of your custom components will be created, so that you can prepare, run and monitor pipeline workflows using only the UI (in the `Pipelines` section). 
+Hosting your code in a repository is the best way to track changes and serialise releases. However, there are additional functionalities within the AML ecosystem that allow users to *plug and play* with pipelines. By opening a terminal and running the shell script contained in `./setup` folder, with `<workspace-name>` and `<resource-group-name>` as parameters, an instance of your custom components will be created, so that you can prepare, run and monitor pipeline workflows using only the UI (in the `Pipelines` section).
 
 ## IAM
 
@@ -169,12 +180,10 @@ Once the environment has been created, permissions for service account have been
 Despite including and end-to-end solution to model design in AML, the following additional features are expected to be developed:
 
 - [X] Adapt `build_MLTable` function in pipeline job script to replicate Data Asset config file (done by @demstalferez).
+- [X] Monolitic code snippet using MLTable.
 - [ ] Make preprocessing flexible enough to ingest categorical features, and either perform label or one-hot encoding.
-- [ ] `RAPIDS` integration to train ML models using GPU.
 - [ ] Inference endpoint creation.
 - [ ] User-friendly app development.
-- [ ] Live application by using a real IoT device.
-
 
 ## License
 Released under [MIT](/LICENSE) by [@hedrergudene](https://github.com/hedrergudene).

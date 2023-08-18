@@ -1,7 +1,5 @@
 # Requierments
 import logging as log
-import json
-import os
 import sys
 from pathlib import Path
 from azure.ai.ml.entities import Data
@@ -38,24 +36,14 @@ def main(
     ml_client = MLClient(credential, subscription_id, resource_group, aml_workspace_name)    
     # Path to folder containing MLTable artifact (MLTable file)
     my_data = Data(
-        path=f'./input',
+        path=f'../setup',
         type=AssetTypes.MLTABLE,
         #description=data_asset_description,
         name=data_asset_name,
         tags={'target_var': target_var}
         #version='<version>'
     )
-    output = ml_client.data.create_or_update(my_data)
-    # If files were found, generate output
-    with open(os.path.join(output_path, 'data_asset_config.json'), 'w', encoding='utf8') as f:
-        json.dump(
-            {
-                'name':output.name,
-                'version':output.version
-            },
-            f,
-            ensure_ascii=False
-        )
+    ml_client.data.create_or_update(my_data)
 
 
 if __name__=="__main__":

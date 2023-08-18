@@ -2,30 +2,25 @@ $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.jso
 type: command
 
 # General information about the component
-name: data_ckpt
-display_name: Data checkpoint
-description: A template component to fetch blobs from a container, by agreeing with a regex expression, and create a Data Asset in AzureML.
+name: read_data
+display_name: Read data
+description: A template component to fetch blobs from a container, by agreeing with a regex expression.
 tags:
   author: Antonio Zarauz Moreno, CEO @MAIACorp
   version: "1"
 
 # Inputs and outputs
 inputs:
-  subscription_id:
+  storage_id:
     type: string
     optional: false
-  resource_group:
+  container_id:
     type: string
     optional: false
-  aml_workspace_name:
+  regex_pattern:
     type: string
-    optional: false
-  data_asset_name:
-    type: string
-    optional: false
-  target_var:
-    type: string
-    optional: false
+    default: '(.*?)\.csv'
+    optional: true
 outputs:
   output_path:
     type: uri_folder
@@ -38,8 +33,8 @@ code: ./
 # Environment takes care of source image and dependencies
 # https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-environments-v2?view=azureml-api-2&tabs=cli
 environment:
-  conda_file: ./conda.yaml
-  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04
+  build:
+    path: ./docker
 
 # Cluster instance
 compute: azureml:cpu-cluster
@@ -55,4 +50,4 @@ resources:
 
 # The command section specifies the command to execute while running
 # this component
-command: python ./main.py --subscription_id ${{inputs.subscription_id}} --resource_group ${{inputs.resource_group}} --aml_workspace_name ${{inputs.aml_workspace_name}} --data_asset_name ${{inputs.data_asset_name}} --target_var ${{inputs.target_var}} --output_path ${{outputs.output_path}}
+command: python ./main.py --storage_id ${{inputs.storage_id}} --container_id ${{inputs.container_id}} $[[--regex_pattern '${{inputs.regex_pattern}}']] --output_path ${{outputs.output_path}}

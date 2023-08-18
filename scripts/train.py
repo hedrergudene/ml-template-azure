@@ -17,6 +17,8 @@ from azure.identity import DefaultAzureCredential
 from azure.ai.ml import MLClient
 import mltable
 import mlflow
+import azureml.core
+from azureml.exceptions import ProjectSystemException
 ## Model selection
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, mean_squared_error, mean_absolute_error
@@ -42,19 +44,6 @@ handler.setLevel(log.DEBUG)
 formatter = log.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 root.addHandler(handler)
-
-# Auxiliar method to fetch files
-def get_file(f):
-    f = Path(f)
-    if f.is_file():
-        return f
-    else:
-        files = list(f.iterdir())
-        if len(files) == 1:
-            return files[0]
-        else:
-            log.error(f"More than one file was found in directory: {','.join(files)}.")
-            return (f"More than one file was found in directory: {','.join(files)}.", 500)
 
 # Function used to compute evaluation metrics
 def compute_metrics(inputs:List[np.array], targets:List[np.array], is_regression:bool):
@@ -85,63 +74,56 @@ def compute_metrics(inputs:List[np.array], targets:List[np.array], is_regression
         return {'oof_accuracy': acc, 'oof_precision': pr, 'oof_recall': rc, 'oof_f1':f1, 'oof_catcross':catcross}
 
 
-# Main method. Fire automatically allign method arguments with parse commands from console
+# Main code
 def main(
-    input_path,
+    subscription_id,
+    resource_group,
+    aml_workspace_name,
+    mltable_name,
     model_name,
     experiment_name,
     target_var,
     n_calls,
     n_initial_points,
-    seed,
-    output_model_path,
-    output_metadata_path
+    seed
 ):
-    """Azure ML component to train a supervised learning ML
-       model using bayesian hyperparameter optimisation.
-
-    Args:
-        input_path (uri_folder): Path where MLTable data asset metadata is contained in JSON format
-        model_name (str): Id your experiment will be named with.
-        experiment_name (str): Id your experiment will be named with.
-        target_var (str): Variable to be analysed.
-        bayes_config (str): Serialised dictionary containing experiment configuration.
-        n_calls (int): Number of iterations in bayesian hyperparameter optimisation algorithm.
-        n_initial_points (int): Number of initial steps in bayesian hyperparameter optimisation algorithm.
-        seed (int): Random state.
-        output_model_path (uri_folder): Path where model weights are placed.
-        output_metadata_path (uri_folder): Path where metadata is placed.
-
-    Returns:
-        _type_: _description_
-    """
     # Create output paths
-    Path(output_model_path).mkdir(parents=True, exist_ok=True)
-    Path(output_metadata_path).mkdir(parents=True, exist_ok=True)
+    Path('./output').mkdir(parents=True, exist_ok=True)
     Path('./output_experiment').mkdir(parents=True, exist_ok=True)
 
-    # Import data from input
-    log.info(f"Fetch data:")
-    df = pd.read_csv(get_file(input_path))
+    #
+    # Part I: Data ingestion and preprocessing
+    #
 
+    # Import data from data asset
+    log.info(f"Fetch data from Azure Data Asset:")
+    # Check if given credential can get token successfully
+    credential = DefaultAzureCredential()
+    credential.get_token("https://management.azure.com/.default")
+    # MLClient
+    ml_client = MLClient(credential, subscription_id, resource_group, aml_workspace_name)
     # Model (either classification or regression)
-    log.info(f"Machine Learning model selection:")
     try:
         model = getattr(sys.modules[__name__], model_name)
     except AttributeError:
         log.error("model_name parameter is not available.")
         raise AttributeError("model_name parameter is not available.")
     is_regression = True if model_name not in ['LGBMClassifier', 'SVC', 'RandomForestClassifier'] else False
-
-    ## Global statistics of data
-    log.info(f"Computing statistics of data:")
+    # Fetch previously created data asset
+    data_asset = ml_client.data.get(name=mltable_name)
+    target_var = data_asset.tags.get('target_var')
+    tbl = mltable.load(f'azureml:/{data_asset.id}')
+    # Convert to pd.DataFrame object
+    df = tbl.to_pandas_dataframe()
+    # Global statistics of data
     mu_X = np.mean(df.loc[:, ~df.columns.isin([target_var])].values, axis=0)
     sigma_X = np.std(df.loc[:, ~df.columns.isin([target_var])].values, axis=0)
     mu_y = np.mean(df[target_var].values) if is_regression else 0
     sigma_y = np.std(df[target_var].values) if is_regression else 1
     ## Convert target variable into `int` in case it only contains 0-1 values
+    target_var = data_asset.tags['target_var']
     if df[target_var].dtype=='bool': df[target_var] = df[target_var].astype('int')
-    # define the space of hyperparameters to search
+    # Define the space of hyperparameters to search
     log.info(f"Setting up hyperparameter space:")
     with open('./input/opt_config.json', 'r') as f:
         bayes_dct = json.load(f)
@@ -152,8 +134,11 @@ def main(
     if bayes_dct.get('integer') is not None:
         for name, values in bayes_dct.get('integer').items():
             search_space.append(Integer(values[0]['min'], values[1]['max'], name=name))
-
-    # Training
+    
+    #
+    # Part II: Model training
+    #
+    
     log.info(f"Start fitter training:")
     ## Function to apply param configuration to specific run
     @use_named_args(search_space)
@@ -239,11 +224,11 @@ def main(
     model.fit(X, y)
     # Generate model output
     log.info(f"Dump model:")
-    joblib.dump(model, os.path.join(output_model_path, 'pretrained_model.joblib'))
+    joblib.dump(model, os.path.join('output', 'pretrained_model.joblib'))
     # Generate metadata output
     framework_name = re.findall("\'(.*?)\'",str(getattr(sys.modules[__name__], model_name)))[0].split('.')[0]
     log.info(f"Dump metadata:")
-    with open(os.path.join(output_metadata_path, 'metadata.json'), 'w', encoding='utf8') as f:
+    with open(os.path.join('output', 'metadata.json'), 'w', encoding='utf8') as f:
         json.dump({
             **{'params':{k:eval(v) for k,v in exp_dct['params'].items()}},
             **{'metrics':{k:eval(v) for k,v in exp_dct['metrics'].items()}},
@@ -264,5 +249,40 @@ def main(
         }, f, ensure_ascii=False)
 
 
+    #
+    # Part III: Save model
+    #
+
+    # Load files
+    with open(os.path.join('output', 'metadata.json'), 'r', encoding='utf-8') as f: metadata_dct = json.load(f)
+    # Azure workspace config
+    try:
+        ws = azureml.core.Workspace(
+            subscription_id=subscription_id,
+            resource_group=resource_group,
+            workspace_name=aml_workspace_name,
+        )
+        log.info(f"Workspace from subscription {subscription_id} and resource group {resource_group} in {aml_workspace_name} was successfully fetched.")
+    except ProjectSystemException:
+        log.error(f"Workspace from subscription {subscription_id} and resource group {resource_group} in {aml_workspace_name} was not found.")
+        raise ProjectSystemException(f"Workspace from subscription {subscription_id} and resource group {resource_group} in {aml_workspace_name} was not found.")
+    log.info(f"Wokspace info: \n\tName: {ws.name}\n\tResource group: {ws.resource_group}\n\tLocation: {ws.location}\n\tSubscription ID: {ws.subscription_id}")
+    # Register the model
+    log.info(f'Register the model')
+    azureml.core.Model.register(
+        workspace=ws,
+        model_name=experiment_name,                                             # Name of the registered model in your workspace.
+        model_path=os.path.join('output', 'pretrained_model.joblib'),           # Local file to upload and register as a model.
+        model_framework=metadata_dct['framework']['name'],                      # Framework used to create the model.
+        model_framework_version=metadata_dct['framework']['version'],           # Version of scikit-learn used to create the model.
+        #sample_input_dataset=input_dataset,
+        #sample_output_dataset=output_dataset,
+        resource_configuration=azureml.core.resource_configuration.ResourceConfiguration(cpu=1, memory_in_gb=2.0, gpu=0),
+        description='Model checkpoint template.',
+        properties={**metadata_dct['params'], **metadata_dct['metrics'], **metadata_dct['stats']},
+        tags={'author': 'Antonio Zarauz Moreno, CEO @MAIACorp'}
+    )
+
+# Main framework
 if __name__=="__main__":
     fire.Fire(main)

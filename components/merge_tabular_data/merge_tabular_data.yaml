@@ -2,32 +2,17 @@ $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.jso
 type: command
 
 # General information about the component
-name: save_model
-display_name: Save model
-description: A template component to create a model checkpoint in Azure ML Model Registry.
+name: merge_tabular_data
+display_name: Merge data
+description: A template component to combine data with same tabular format.
 tags:
   author: Antonio Zarauz Moreno, CEO @MAIACorp
   version: "1"
 
 # Inputs and outputs
 inputs:
-  model_ckpt_path:
+  input_path:
     type: uri_folder
-    optional: false
-  metadata_path:
-    type: uri_folder
-    optional: false
-  subscription_id:
-    type: string
-    optional: false
-  resource_group:
-    type: string
-    optional: false
-  aml_workspace_name:
-    type: string
-    optional: false
-  experiment_name:
-    type: string
     optional: false
 outputs:
   output_path:
@@ -58,4 +43,4 @@ resources:
 
 # The command section specifies the command to execute while running
 # this component
-command: python ./main.py --model_ckpt_path ${{inputs.model_ckpt_path}} --metadata_path ${{inputs.metadata_path}} --subscription_id ${{inputs.subscription_id}} --resource_group ${{inputs.resource_group}} --aml_workspace_name ${{inputs.aml_workspace_name}} --experiment_name ${{inputs.experiment_name}} --output_path ${{outputs.output_path}}
+command: python ./main.py --input_path ${{inputs.input_path}} --output_path ${{outputs.output_path}}
