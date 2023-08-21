@@ -29,8 +29,4 @@ transformations:
         - columns: 'eCO2[ppm]'
           column_type: int
         - columns: 'Fire Alarm'
-          column_type:
-            boolean:
-              mismatch_as: error
-              true_values: ["1"]
-              false_values: ["0"]
+          column_type: int

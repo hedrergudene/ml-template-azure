@@ -24,11 +24,8 @@ def main(
     resource_group,
     aml_workspace_name,
     data_asset_name,
-    target_var,
-    output_path
+    target_var
 ):
-    # Create output paths
-    Path(output_path).mkdir(parents=True, exist_ok=True)
     # Check if given credential can get token successfully
     credential = DefaultAzureCredential()
     credential.get_token("https://management.azure.com/.default")
@@ -36,7 +33,7 @@ def main(
     ml_client = MLClient(credential, subscription_id, resource_group, aml_workspace_name)    
     # Path to folder containing MLTable artifact (MLTable file)
     my_data = Data(
-        path=f'../setup',
+        path=f'./setup',
         type=AssetTypes.MLTABLE,
         #description=data_asset_description,
         name=data_asset_name,
