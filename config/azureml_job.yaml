@@ -6,11 +6,8 @@ azure:
     cpu_cluster_aml_id : 'cpu-cluster'
     gpu_cluster_aml_id : 'gpu-cluster'
   experiment_name : 'azureml_job_template'
-  keyvault:
-    name: 'XXXXXX'
-    decrypt_secret_name: 'XXXXXX'
 data:
-  data_asset_name: 'azureml_iot'
+  data_asset_name: 'XXXXXX'
   target_var: 'Fire_Alarm'
 
 train:
@@ -25,10 +22,10 @@ train:
           - min: 0.0001
           - max: 0.1
         reg_alpha:
-          - min: 0.
+          - min: 0.0
           - max: 0.25
         reg_lambda:
-          - min: 0.
+          - min: 0.0
           - max: 0.25
       integer:
         n_estimators:
