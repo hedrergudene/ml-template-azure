@@ -109,7 +109,8 @@ def main(
         raise AttributeError("model_name parameter is not available.")
     is_regression = True if model_name not in ['LGBMClassifier', 'SVC', 'RandomForestClassifier'] else False
     # Fetch previously created data asset
-    data_asset = ml_client.data.get(name=mltable_name)
+    lv = [x.latest_version for x in ml_client.data.list()][0]
+    data_asset = ml_client.data.get(name=mltable_name, version=lv)
     target_var = data_asset.tags.get('target_var')
     if target_var is None:
         log.error("Target variable has not been specified during MLTable creation as tag. Please include this information.")

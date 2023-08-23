@@ -61,7 +61,10 @@ def main(
             'seed' : config_dct['train']['seed']
         },
         compute=config_dct['azure']['computing']['cpu_cluster_aml_id'],
-        environment=Environment(build=BuildContext(dockerfile_path='./docker/Dockerfile')),
+        environment=Environment(
+            image="mcr.microsoft.com/azureml/openmpi3.1.2-ubuntu18.04",
+            conda_file="conda.yaml",
+        ),
         code="./src",
         command="""python train.py --subscription_id ${{inputs.subscription_id}}
                                    --resource_group ${{inputs.resource_group}}
