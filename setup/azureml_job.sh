@@ -1,1 +1,1 @@
-az ml job create -f ../jobs/command/azureml_job.yaml
+az ml job create -f ./azureml_command.yaml

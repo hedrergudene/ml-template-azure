@@ -18,7 +18,7 @@ transformations:
         delimiter: ","
         include_path_column: true
         empty_as_string: false
-    - keep_columns: ['Temperature[C]', 'Humidity[%]', 'TVOC[ppb]', 'eCO2[ppm]', 'Fire Alarm']
+    - keep_columns: ['Temperature[C]', 'Humidity[%]', 'TVOC[ppb]', 'eCO2[ppm]', 'Fire_Alarm']
     - convert_column_types:
         - columns: 'Temperature[C]'
           column_type: float
@@ -28,5 +28,5 @@ transformations:
           column_type: int
         - columns: 'eCO2[ppm]'
           column_type: int
-        - columns: 'Fire Alarm'
+        - columns: 'Fire_Alarm'
           column_type: int
