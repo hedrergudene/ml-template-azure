@@ -3,10 +3,9 @@ import yaml
 import sys
 import json
 import logging as log
-import azureml.core
 from azure.identity import DefaultAzureCredential
-from azureml.core import Environment, ScriptRunConfig, Experiment
-from azure.core.exceptions import ProjectSystemException
+from azure.ai.ml import MLClient, command
+from azure.ai.ml.entities import Environment, BuildContext
 import fire
 
 # Setup logs
@@ -41,45 +40,45 @@ def main(
       json.dump(config_dct['train']['bayesian_search']['params'], f)
 
     # Azure workspace config
-    try:
-        ws = azureml.core.Workspace(
-            subscription_id=config_dct['azure']['subscription_id'],
-            resource_group=config_dct['azure']['resource_group'],
-            workspace_name=config_dct['azure']['aml_workspace_name'],
-        )
-        log.info(f"Workspace from subscription {config_dct['azure']['subscription_id']} and resource group {config_dct['azure']['resource_group']} in {config_dct['azure']['aml_workspace_name']} was successfully fetched.")
-    except ProjectSystemException:
-        log.error(f"Workspace from subscription {config_dct['azure']['subscription_id']} and resource group {config_dct['azure']['resource_group']} in {config_dct['azure']['aml_workspace_name']} was not found.")
-        raise ProjectSystemException(f"Workspace from subscription {config_dct['azure']['subscription_id']} and resource group {config_dct['azure']['resource_group']} in {config_dct['azure']['aml_workspace_name']} was not found.")
-    log.info(f"Wokspace info: \n\tName: {ws.name}\n\tResource group: {ws.resource_group}\n\tLocation: {ws.location}\n\tSubscription ID: {ws.subscription_id}")
+    ml_client = MLClient(
+        credential=credential,
+        subscription_id=config_dct['azure']['subscription_id'],
+        resource_group_name=config_dct['azure']['resource_group'],
+        workspace_name=config_dct['azure']['aml_workspace_name'],
+    )
 
-    # Environment from Dockerfile
-    env = Environment.from_dockerfile(name="docker_env", dockerfile="../setup/docker/Dockerfile")
-
-    # Job configuration
-    config = ScriptRunConfig(source_directory='./src',
-                            script='train.py',
-                            arguments=[
-                                '--subscription_id', config_dct['azure']['subscription_id'],
-                                '--resource_group', config_dct['azure']['resource_group'],
-                                '--aml_workspace_name', config_dct['azure']['aml_workspace_name'],
-                                '--mltable_name', config_dct['train']['mltable_name'],
-                                '--model_name', config_dct['train']['model_name'],
-                                '--experiment_name', config_dct['azure']['experiment_name'],
-                                '--target_var', config_dct['data']['target_var'],
-                                '--n_calls', config_dct['train']['bayesian_search']['n_calls'],
-                                '--n_initial_points', config_dct['train']['bayesian_search']['n_initial_points'],
-                                '--seed', config_dct['train']['seed']
-                            ],
-                            environment=env,
-                            compute_target=config_dct['azure']['computing']['cpu_cluster_aml_id']
-                        )
-
-    # Create an experiment
-    experiment = Experiment(workspace=ws, name=config_dct['azure']['experiment_name'])
+    # Job config
+    job = command(
+        inputs={
+            'subscription_id' : config_dct['azure']['subscription_id'],
+            'resource_group' : config_dct['azure']['resource_group'],
+            'aml_workspace_name' : config_dct['azure']['aml_workspace_name'],
+            'mltable_name' : config_dct['train']['mltable_name'],
+            'model_name' : config_dct['train']['model_name'],
+            'experiment_name' : config_dct['azure']['experiment_name'],
+            'n_calls' : config_dct['train']['bayesian_search']['n_calls'],
+            'n_initial_points' : config_dct['train']['bayesian_search']['n_initial_points'],
+            'seed' : config_dct['train']['seed']
+        },
+        compute=config_dct['azure']['computing']['cpu_cluster_aml_id'],
+        environment=Environment(build=BuildContext(dockerfile_path='./docker/Dockerfile')),
+        code="./src",
+        command="""python train.py --subscription_id ${{inputs.subscription_id}}
+                                   --resource_group ${{inputs.resource_group}}
+                                   --aml_workspace_name ${{inputs.aml_workspace_name}}
+                                   --mltable_name ${{inputs.mltable_name}}
+                                   --model_name ${{inputs.model_name}}
+                                   --experiment_name ${{inputs.experiment_name}}
+                                   --n_calls ${{inputs.n_calls}}
+                                   --n_initial_points ${{inputs.n_initial_points}}
+                                   --seed ${{inputs.seed}}
+                """,
+        experiment_name=config_dct['azure']['experiment_name'],
+        display_name=config_dct['azure']['experiment_name'],
+    )
     
     # Submit the run
-    run = experiment.submit(config=config)
+    command_job = ml_client.jobs.create_or_update(job)
 
 
 if __name__=="__main__":
