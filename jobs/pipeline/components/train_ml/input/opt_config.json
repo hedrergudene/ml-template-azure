@@ -1,0 +1,1 @@
+{"real": {"learning_rate": [{"min": 0.0001}, {"max": 0.1}], "reg_alpha": [{"min": 0.0}, {"max": 0.25}], "reg_lambda": [{"min": 0.0}, {"max": 0.25}]}, "integer": {"n_estimators": [{"min": 25}, {"max": 500}]}}

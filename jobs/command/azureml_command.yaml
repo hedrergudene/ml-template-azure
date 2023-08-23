@@ -5,10 +5,7 @@ azure:
   computing:
     cpu_cluster_aml_id : 'cpu-cluster'
     gpu_cluster_aml_id : 'gpu-cluster'
-  experiment_name : 'azureml_job_template'
-data:
-  data_asset_name: 'XXXXXX'
-  target_var: 'Fire_Alarm'
+  experiment_name : 'azureml_command_template'
 
 train:
   mltable_name: 'XXXXXX'

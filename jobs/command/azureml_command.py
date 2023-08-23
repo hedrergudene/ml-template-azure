@@ -21,7 +21,7 @@ root.addHandler(handler)
 
 # Main method. Fire automatically allign method arguments with parse commands from console
 def main(
-    config_path:str='../config/azureml_job.yaml'
+    config_path:str='./azureml_command.yaml'
 ):
 
     # Get credential token
@@ -37,7 +37,7 @@ def main(
         config_dct = yaml.load(f, Loader=yaml.FullLoader)
     
     ## Create opt_config.json object
-    with open('./setup/opt_config.json', 'w') as f:
+    with open('./src/opt_config.json', 'w') as f:
       json.dump(config_dct['train']['bayesian_search']['params'], f)
 
     # Azure workspace config
@@ -57,13 +57,13 @@ def main(
     env = Environment.from_dockerfile(name="docker_env", dockerfile="../setup/docker/Dockerfile")
 
     # Job configuration
-    config = ScriptRunConfig(source_directory='../scripts',
+    config = ScriptRunConfig(source_directory='./src',
                             script='train.py',
                             arguments=[
                                 '--subscription_id', config_dct['azure']['subscription_id'],
                                 '--resource_group', config_dct['azure']['resource_group'],
                                 '--aml_workspace_name', config_dct['azure']['aml_workspace_name'],
-                                '--mltable_name', config_dct['train']['model_name'],
+                                '--mltable_name', config_dct['train']['mltable_name'],
                                 '--model_name', config_dct['train']['model_name'],
                                 '--experiment_name', config_dct['azure']['experiment_name'],
                                 '--target_var', config_dct['data']['target_var'],

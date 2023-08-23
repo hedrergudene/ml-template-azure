@@ -1,0 +1,85 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+
+# General information about the component
+display_name: Template job
+experiment_name: azureml_template_job
+description: Train a machine learning model using an MLTable input
+tags:
+  author: Antonio Zarauz Moreno, CEO @MAIACorp
+  version: "1"
+
+# Inputs
+inputs:
+  subscription_id:
+    type: string
+    optional: false
+  resource_group:
+    type: string
+    optional: false
+  aml_workspace_name:
+    type: string
+    optional: false
+  mltable_name:
+    type: string
+    optional: false
+  model_name:
+    type: string
+    optional: false
+  experiment_name:
+    type: string
+    optional: false
+  n_calls:
+    type: integer
+    min: 20
+    max: 200
+    default: 100
+    optional: true
+  n_initial_points:
+    type: integer
+    min: 5
+    max: 15
+    default: 10
+    optional: true
+  seed:
+    type: integer
+    min: 1
+    max: 9999
+    default: 42
+    optional: true
+
+# The source code path of it's defined in the code section and when the
+# component is run in cloud, all files from that path will be uploaded
+# as the snapshot of this component
+code: ./
+
+# Environment takes care of source image and dependencies
+# https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-environments-v2?view=azureml-api-2&tabs=cli
+environment:
+  build:
+    path: ./docker
+
+# Cluster instance
+compute: azureml:cpu-cluster
+
+# Distribution type
+distribution:
+  type: mpi
+  process_count_per_instance: 1 # Number of nodes per instance
+
+# How many VMs we need
+resources:
+  instance_count: 1 # Number of instances to create
+
+# The command section specifies the command to execute while running
+# this component
+command: >-
+  python train.py
+  --subscription_id ${{inputs.subscription_id}}
+  --resource_group ${{inputs.resource_group}}
+  --aml_workspace_name ${{inputs.aml_workspace_name}}
+  --mltable_name ${{inputs.mltable_name}}
+  --model_name ${{inputs.model_name}}
+  --experiment_name ${{inputs.experiment_name}}
+  $[[--n_calls ${inputs.n_calls}}]]
+  $[[--n_initial_points ${{inputs.n_initial_points}}]]
+  $[[--seed ${{inputs.seed}}]]

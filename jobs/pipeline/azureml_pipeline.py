@@ -21,7 +21,7 @@ root.addHandler(handler)
 
 # Main method. Fire automatically allign method arguments with parse commands from console
 def main(
-    config_path:str='../config/azureml_pipeline.yaml'
+    config_path:str='./azureml_pipeline.yaml'
 ):
 
     # Get credential token

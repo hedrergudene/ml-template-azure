@@ -82,7 +82,6 @@ def main(
     mltable_name,
     model_name,
     experiment_name,
-    target_var,
     n_calls,
     n_initial_points,
     seed
@@ -112,6 +111,9 @@ def main(
     # Fetch previously created data asset
     data_asset = ml_client.data.get(name=mltable_name)
     target_var = data_asset.tags.get('target_var')
+    if target_var is None:
+        log.error("Target variable has not been specified during MLTable creation as tag. Please include this information.")
+        raise ValueError("Target variable has not been specified during MLTable creation as tag. Please include this information.")
     tbl = mltable.load(f'azureml:/{data_asset.id}')
     # Convert to pd.DataFrame object
     df = tbl.to_pandas_dataframe()
@@ -121,11 +123,10 @@ def main(
     mu_y = np.mean(df[target_var].values) if is_regression else 0
     sigma_y = np.std(df[target_var].values) if is_regression else 1
     ## Convert target variable into `int` in case it only contains 0-1 values
-    target_var = data_asset.tags['target_var']
     if df[target_var].dtype=='bool': df[target_var] = df[target_var].astype('int')
     # Define the space of hyperparameters to search
     log.info(f"Setting up hyperparameter space:")
-    with open('./input/opt_config.json', 'r') as f:
+    with open('./opt_config.json', 'r') as f:
         bayes_dct = json.load(f)
     search_space = []
     if bayes_dct.get('real') is not None:
