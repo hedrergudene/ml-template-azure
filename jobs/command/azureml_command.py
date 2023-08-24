@@ -66,7 +66,7 @@ def main(
         },
         compute=config_dct['azure']['computing']['cpu_cluster_aml_id'],
         environment=Environment(
-            image="mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04",
+            image="mcr.microsoft.com/azureml/curated/sklearn-1.0:11",
             conda_file="conda.yaml",
         ),
         code="./src",
