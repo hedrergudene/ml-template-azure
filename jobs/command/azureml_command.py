@@ -5,7 +5,7 @@ import json
 import logging as log
 from azure.identity import DefaultAzureCredential
 from azure.ai.ml import MLClient, command
-from azure.ai.ml.entities import Environment, BuildContext
+from azure.ai.ml.entities import Environment
 import fire
 
 # Setup logs
@@ -24,6 +24,7 @@ def main(
 ):
 
     # Get credential token
+    log.info(f"Fetch credential token:")
     try:
         credential = DefaultAzureCredential()
         credential.get_token("https://management.azure.com/.default")
@@ -36,10 +37,12 @@ def main(
         config_dct = yaml.load(f, Loader=yaml.FullLoader)
     
     ## Create opt_config.json object
+    log.info(f"Create hyperparameter space file:")
     with open('./src/opt_config.json', 'w') as f:
       json.dump(config_dct['train']['bayesian_search']['params'], f)
 
     # Azure workspace config
+    log.info(f"Get MLClient:")
     ml_client = MLClient(
         credential=credential,
         subscription_id=config_dct['azure']['subscription_id'],
@@ -48,6 +51,7 @@ def main(
     )
 
     # Job config
+    log.info(f"Define command job configuration:")
     job = command(
         inputs={
             'subscription_id' : config_dct['azure']['subscription_id'],
@@ -62,7 +66,7 @@ def main(
         },
         compute=config_dct['azure']['computing']['cpu_cluster_aml_id'],
         environment=Environment(
-            image="mcr.microsoft.com/azureml/openmpi3.1.2-ubuntu18.04",
+            image="mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04",
             conda_file="conda.yaml",
         ),
         code="./src",
@@ -81,6 +85,7 @@ def main(
     )
     
     # Submit the run
+    log.info(f"Submit the job:")
     command_job = ml_client.jobs.create_or_update(job)
 
 

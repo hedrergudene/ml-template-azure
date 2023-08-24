@@ -118,13 +118,19 @@ def main(
     tbl = mltable.load(f'azureml:/{data_asset.id}')
     # Convert to pd.DataFrame object
     df = tbl.to_pandas_dataframe()
+    if df[target_var].dtype=='object':
+        try:
+            df[target_var] = df[target_var].apply(lambda x: int(eval(x)))
+        except:
+            log.error("Target variable is a string other than 'True' and/or 'False'. Please format that variable correctly.")
+            raise ValueError("Target variable is a string other than 'True' and/or 'False'. Please format that variable correctly.")
+    elif df[target_var].dtype=='bool':
+        df[target_var] = df[target_var].astype('int')
     # Global statistics of data
     mu_X = np.mean(df.loc[:, ~df.columns.isin([target_var])].values, axis=0)
     sigma_X = np.std(df.loc[:, ~df.columns.isin([target_var])].values, axis=0)
     mu_y = np.mean(df[target_var].values) if is_regression else 0
     sigma_y = np.std(df[target_var].values) if is_regression else 1
-    ## Convert target variable into `int` in case it only contains 0-1 values
-    if df[target_var].dtype=='bool': df[target_var] = df[target_var].astype('int')
     # Define the space of hyperparameters to search
     log.info(f"Setting up hyperparameter space:")
     with open('./opt_config.json', 'r') as f:
@@ -140,7 +146,9 @@ def main(
     #
     # Part II: Model training
     #
-    
+    log.info("Performing equality 'np.int = np.int64' to avoid deprecation error in skopt after numpy 1.20.0 release:")
+    np.int = np.int64
+
     log.info(f"Start fitter training:")
     ## Function to apply param configuration to specific run
     @use_named_args(search_space)

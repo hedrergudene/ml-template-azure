@@ -123,6 +123,14 @@ def main(
     # Import data from input
     log.info(f"Fetch data:")
     df = pd.read_csv(get_file(input_path))
+    if df[target_var].dtype=='object':
+        try:
+            df[target_var] = df[target_var].apply(lambda x: int(eval(x)))
+        except:
+            log.error("Target variable is a string other than 'True' and/or 'False'. Please format that variable correctly.")
+            raise ValueError("Target variable is a string other than 'True' and/or 'False'. Please format that variable correctly.")
+    elif df[target_var].dtype=='bool':
+        df[target_var] = df[target_var].astype('int')
 
     # Model (either classification or regression)
     log.info(f"Machine Learning model selection:")
@@ -154,6 +162,9 @@ def main(
             search_space.append(Integer(values[0]['min'], values[1]['max'], name=name))
 
     # Training
+    log.info("Performing equality 'np.int = np.int64' to avoid deprecation error in skopt after numpy 1.20.0 release:")
+    np.int = np.int64
+
     log.info(f"Start fitter training:")
     ## Function to apply param configuration to specific run
     @use_named_args(search_space)
