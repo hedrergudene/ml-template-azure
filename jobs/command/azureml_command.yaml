@@ -9,6 +9,7 @@ azure:
 
 train:
   mltable_name: 'XXXXXX'
+  mltable_version: 1
   model_name: 'LGBMClassifier'
   bayesian_search:
     n_calls: 100

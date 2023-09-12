@@ -47,7 +47,7 @@ def main(
         credential=credential,
         subscription_id=config_dct['azure']['subscription_id'],
         resource_group_name=config_dct['azure']['resource_group'],
-        workspace_name=config_dct['azure']['aml_workspace_name'],
+        workspace_name=config_dct['azure']['aml_workspace_name']
     )
 
     # Job config
@@ -58,6 +58,7 @@ def main(
             'resource_group' : config_dct['azure']['resource_group'],
             'aml_workspace_name' : config_dct['azure']['aml_workspace_name'],
             'mltable_name' : config_dct['train']['mltable_name'],
+            'mltable_version' : config_dct['train']['mltable_version'],
             'model_name' : config_dct['train']['model_name'],
             'experiment_name' : config_dct['azure']['experiment_name'],
             'n_calls' : config_dct['train']['bayesian_search']['n_calls'],
@@ -67,12 +68,12 @@ def main(
         compute=config_dct['azure']['computing']['cpu_cluster_aml_id'],
         environment=Environment(
             image="mcr.microsoft.com/azureml/curated/sklearn-1.0:11",
-            conda_file="conda.yaml",
+            conda_file="conda.yaml"
         ),
         code="./src",
         command="python train.py --subscription_id ${{inputs.subscription_id}} --resource_group ${{inputs.resource_group}} --aml_workspace_name ${{inputs.aml_workspace_name}} --mltable_name ${{inputs.mltable_name}} --model_name ${{inputs.model_name}} --experiment_name ${{inputs.experiment_name}} --n_calls ${{inputs.n_calls}} --n_initial_points ${{inputs.n_initial_points}} --seed ${{inputs.seed}}",
         experiment_name=config_dct['azure']['experiment_name'],
-        display_name=config_dct['azure']['experiment_name'],
+        display_name=config_dct['azure']['experiment_name']
     )
     
     # Submit the run
