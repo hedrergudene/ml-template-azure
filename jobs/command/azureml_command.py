@@ -71,7 +71,17 @@ def main(
             conda_file="conda.yaml"
         ),
         code="./src",
-        command="python train.py --subscription_id ${{inputs.subscription_id}} --resource_group ${{inputs.resource_group}} --aml_workspace_name ${{inputs.aml_workspace_name}} --mltable_name ${{inputs.mltable_name}} --model_name ${{inputs.model_name}} --experiment_name ${{inputs.experiment_name}} --n_calls ${{inputs.n_calls}} --n_initial_points ${{inputs.n_initial_points}} --seed ${{inputs.seed}}",
+        command="python train.py "
+                "--subscription_id ${{inputs.subscription_id}} "
+                "--resource_group ${{inputs.resource_group}} "
+                "--aml_workspace_name ${{inputs.aml_workspace_name}} "
+                "--mltable_name ${{inputs.mltable_name}} "
+                "--mltable_version ${{inputs.mltable_version}} "
+                "--model_name ${{inputs.model_name}} "
+                "--experiment_name ${{inputs.experiment_name}} "
+                "--n_calls ${{inputs.n_calls}} "
+                "--n_initial_points ${{inputs.n_initial_points}} "
+                "--seed ${{inputs.seed}}",
         experiment_name=config_dct['azure']['experiment_name'],
         display_name=config_dct['azure']['experiment_name']
     )
