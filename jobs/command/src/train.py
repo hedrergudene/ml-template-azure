@@ -289,7 +289,7 @@ def main(
         #sample_output_dataset=output_dataset,
         resource_configuration=azureml.core.resource_configuration.ResourceConfiguration(cpu=1, memory_in_gb=2.0, gpu=0),
         description='Model checkpoint template.',
-        properties={**metadata_dct['params'], **metadata_dct['metrics'], **metadata_dct['stats'], **metadata_dct['framework']},
+        properties={**metadata_dct['params'], **metadata_dct['metrics'], **metadata_dct['stats'], **metadata_dct['framework'], **{'random_state': seed}},
         tags={'author': 'Antonio Zarauz Moreno, CEO @MAIACorp'}
     )
 
