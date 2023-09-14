@@ -271,6 +271,9 @@ def main(
             'name': framework_name,
             'version':getattr(sys.modules[__name__], framework_name).__version__
             }
+            },
+            **{
+                'random_state': seed
             }
         }, f, ensure_ascii=False)
 
