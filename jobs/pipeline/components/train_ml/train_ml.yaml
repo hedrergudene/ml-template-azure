@@ -42,9 +42,7 @@ inputs:
     default: 42
     optional: true
 outputs:
-  output_model_path:
-    type: uri_folder
-  output_metadata_path:
+  output_path:
     type: uri_folder
 
 # The source code path of it's defined in the code section and when the
@@ -72,4 +70,4 @@ resources:
 
 # The command section specifies the command to execute while running
 # this component
-command: python ./main.py --input_path ${{inputs.input_path}} --model_name ${{inputs.model_name}} --experiment_name ${{inputs.experiment_name}} --target_var ${{inputs.target_var}} $[[--n_calls '${{inputs.n_calls}}']] $[[--n_initial_points '${{inputs.n_initial_points}}']] $[[--seed '${{inputs.seed}}']] --output_model_path ${{outputs.output_model_path}} --output_metadata_path ${{outputs.output_metadata_path}}
+command: python ./main.py --input_path ${{inputs.input_path}} --model_name ${{inputs.model_name}} --experiment_name ${{inputs.experiment_name}} --target_var ${{inputs.target_var}} $[[--n_calls '${{inputs.n_calls}}']] $[[--n_initial_points '${{inputs.n_initial_points}}']] $[[--seed '${{inputs.seed}}']] --output_path ${{outputs.output_path}}

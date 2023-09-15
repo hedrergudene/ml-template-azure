@@ -55,7 +55,6 @@ def main(
         output_path (uri.folder): Folder where files are compressed in .rar extension, preserving its original name.
     """
     # Create output paths
-    Path('./decrypted_data').mkdir(parents=True, exist_ok=True)
     Path(output_path).mkdir(parents=True, exist_ok=True)
     # Read input data
     df = pd.read_csv(get_file(input_path))
@@ -82,11 +81,8 @@ def main(
                 .download_blob(max_concurrency=1).readall()
         decrypted_bytes = my_fernet.decrypt(encrypted_bytes)
         # Save decrypted data
-        with open(f'decrypted_data/{filename}', 'wb') as fd:
+        with open(f'{output_path}/{filename}', 'wb') as fd:
             fd.write(decrypted_bytes)
-    # Generate output and remove decrypted data directory
-    os.system(f"rar a {os.path.join(output_path,'output.rar')} ./decrypted_data")
-    os.system(f"rm -rf ./decrypted_data")
 
 if __name__=="__main__":
     fire.Fire(main)

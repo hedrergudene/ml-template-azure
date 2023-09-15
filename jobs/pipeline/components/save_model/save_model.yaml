@@ -11,10 +11,7 @@ tags:
 
 # Inputs and outputs
 inputs:
-  model_ckpt_path:
-    type: uri_folder
-    optional: false
-  metadata_path:
+  input_path:
     type: uri_folder
     optional: false
   subscription_id:
@@ -58,4 +55,4 @@ resources:
 
 # The command section specifies the command to execute while running
 # this component
-command: python ./main.py --model_ckpt_path ${{inputs.model_ckpt_path}} --metadata_path ${{inputs.metadata_path}} --subscription_id ${{inputs.subscription_id}} --resource_group ${{inputs.resource_group}} --aml_workspace_name ${{inputs.aml_workspace_name}} --experiment_name ${{inputs.experiment_name}} --output_path ${{outputs.output_path}}
+command: python ./main.py --input_path ${{inputs.input_path}} --subscription_id ${{inputs.subscription_id}} --resource_group ${{inputs.resource_group}} --aml_workspace_name ${{inputs.aml_workspace_name}} --experiment_name ${{inputs.experiment_name}} --output_path ${{outputs.output_path}}

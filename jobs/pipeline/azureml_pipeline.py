@@ -100,8 +100,7 @@ def main(
 
         # Save model
         save_model_node = save_model_comp(
-            model_ckpt_path=train_ml_node.outputs.output_model_path,
-            metadata_path=train_ml_node.outputs.output_metadata_path,
+            input_path=train_ml_node.outputs.output_path,
             subscription_id=config_dct['azure']['subscription_id'],
             resource_group=config_dct['azure']['resource_group'],
             aml_workspace_name=config_dct['azure']['aml_workspace_name'],

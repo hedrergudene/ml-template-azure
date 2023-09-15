@@ -1,0 +1,194 @@
+# Libraries
+import yaml
+import sys
+import datetime
+import json
+import logging as log
+from azure.identity import DefaultAzureCredential
+from azure.ai.ml import MLClient
+from azure.ai.ml.entities import (
+    ManagedOnlineEndpoint,
+    ManagedOnlineDeployment,
+    Model,
+    Environment,
+    BuildContext,
+    CodeConfiguration
+)
+from azure.mgmt.monitor import MonitorManagementClient
+from azure.mgmt.monitor.models import (
+    AutoscaleProfile,
+    ScaleRule,
+    MetricTrigger,
+    ScaleAction
+)
+import fire
+
+# Setup logs
+root = log.getLogger()
+root.setLevel(log.DEBUG)
+handler = log.StreamHandler(sys.stdout)
+handler.setLevel(log.DEBUG)
+formatter = log.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+root.addHandler(handler)
+
+# Main method. Fire automatically allign method arguments with parse commands from console
+def main(
+    config_path:str='./config/online_endpoint.yaml'
+):
+
+    # Get credential token
+    log.info(f"Fetch credential token:")
+    try:
+        credential = DefaultAzureCredential()
+        credential.get_token("https://management.azure.com/.default")
+    except Exception as ex:
+        log.error(f"Something went wrong regarding authentication. Returned error is: {ex.message}")
+        return (f"Something went wrong regarding authentication. Returned error is: {ex.message}", 500)
+    
+    # Fetch configuration file
+    with open(config_path, 'r') as f:
+        config_dct = yaml.load(f, Loader=yaml.FullLoader) 
+
+    # Azure workspace config
+    log.info(f"Get MLClient:")
+    ml_client = MLClient(
+        credential=credential,
+        subscription_id=config_dct['azure']['subscription_id'],
+        resource_group_name=config_dct['azure']['resource_group'],
+        workspace_name=config_dct['azure']['aml_workspace_name']
+    )
+
+    # Create an online endpoint
+    endpoint = ManagedOnlineEndpoint(
+        name=config_dct['endpoint']['name'], 
+        description=config_dct['endpoint']['description'],
+        auth_mode=config_dct['endpoint']['auth_mode'],
+        traffic={
+            'blue': config_dct['endpoint']['traffic']['blue'],
+            'green': config_dct['endpoint']['traffic']['green']
+        }
+    )
+    ml_client.online_endpoints.begin_create_or_update(endpoint)
+
+    # Fetch model
+    model = Model(
+        name=config_dct['model']['name'],
+        version=config_dct['model']['version']
+    )
+
+    # Define environment
+    env = Environment(build=BuildContext(path='./docker'))
+
+    # Deployment configuration
+    dpl = ManagedOnlineDeployment(
+        name=config_dct['deployment']['name'],
+        endpoint_name=config_dct['endpoint']['name'],
+        model=model,
+        environment=env,
+        code_configuration=CodeConfiguration(
+            code="./src",
+            scoring_script="score.py"
+        ),
+        instance_type=config_dct['deployment']['instance_type'],
+        instance_count=config_dct['deployment']['instance_count']
+    )
+    ml_client.online_deployments.begin_create_or_update(dpl)
+    
+
+#    # For a detailed overview of autoscale settings, ckeck:
+#    # https://learn.microsoft.com/es-es/azure/machine-learning/how-to-autoscale-endpoints?view=azureml-api-2&tabs=python
+#    mon_client = MonitorManagementClient(
+#        credential,
+#        config_dct['azure']['subscription_id']
+#    )
+#    rules = []
+#    if config_dct['autoscale']['threshold']['cpu']['increase'] is not None:
+#        rules.append(
+#            ScaleRule(
+#                metric_trigger = MetricTrigger(
+#                    metric_name="CpuUtilizationPercentage",
+#                    metric_resource_uri = dpl.id, 
+#                    time_grain = datetime.timedelta(minutes = 1),
+#                    statistic = "Average",
+#                    operator = "GreaterThan",
+#                    time_aggregation = "Last",
+#                    time_window = datetime.timedelta(minutes = 5),
+#                    threshold = 70
+#                ),
+#                scale_action = ScaleAction(
+#                    direction = "Increase", 
+#                    type = "ChangeCount", 
+#                    value = 1,
+#                    cooldown = datetime.timedelta(seconds = config_dct['autoscale']['threshold']['cpu']['cooldown'])
+#                )
+#            )
+#        )
+#    if config_dct['autoscale']['threshold']['cpu']['decrease'] is not None:
+#        rules.append(
+#            ScaleRule(
+#                metric_trigger = MetricTrigger(
+#                    metric_name="CpuUtilizationPercentage",
+#                    metric_resource_uri = dpl.id, 
+#                    time_grain = datetime.timedelta(minutes = 1),
+#                    statistic = "Average",
+#                    operator = "GreaterThan",
+#                    time_aggregation = "Last",
+#                    time_window = datetime.timedelta(minutes = 5),
+#                    threshold = 70
+#                ),
+#                scale_action = ScaleAction(
+#                    direction = "Increase", 
+#                    type = "ChangeCount", 
+#                    value = 1,
+#                    cooldown = datetime.timedelta(seconds = config_dct['autoscale']['threshold']['cpu']['cooldown'])
+#                )
+#            )
+#        )
+#    if config_dct['autoscale']['threshold']['latency']['increase'] is not None:
+#        rules.append(
+#            ScaleRule(
+#                metric_trigger = MetricTrigger(
+#                    metric_name="CpuUtilizationPercentage",
+#                    metric_resource_uri = dpl.id, 
+#                    time_grain = datetime.timedelta(minutes = 1),
+#                    statistic = "Average",
+#                    operator = "GreaterThan",
+#                    time_aggregation = "Last",
+#                    time_window = datetime.timedelta(minutes = 5),
+#                    threshold = 70
+#                ),
+#                scale_action = ScaleAction(
+#                    direction = "Increase", 
+#                    type = "ChangeCount", 
+#                    value = 1,
+#                    cooldown = datetime.timedelta(seconds = config_dct['autoscale']['threshold']['cpu']['cooldown'])
+#                )
+#            )
+#        )
+#
+#
+#    mon_client.autoscale_settings.create_or_update(
+#        config_dct['azure']['resource_group'], 
+#        config_dct['autoscale']['name'], 
+#        parameters = {
+#            "location" : endpoint.location,
+#            "target_resource_uri" : dpl.id,
+#            "profiles" : [
+#                AutoscaleProfile(
+#                    name="scale-settings",
+#                    capacity={
+#                        "minimum" : config_dct['autoscale']['capacity']['minimum'], 
+#                        "maximum" : config_dct['autoscale']['capacity']['maximum'],
+#                        "default" : config_dct['autoscale']['capacity']['minimum']
+#                    },
+#                    rules = []
+#                )
+#            ]
+#        }
+#    )
+
+
+
+if __name__=="__main__":
+    fire.Fire(main)

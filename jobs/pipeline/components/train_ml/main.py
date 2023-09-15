@@ -94,8 +94,7 @@ def main(
     n_calls,
     n_initial_points,
     seed,
-    output_model_path,
-    output_metadata_path
+    output_path
 ):
     """Azure ML component to train a supervised learning ML
        model using bayesian hyperparameter optimisation.
@@ -109,15 +108,14 @@ def main(
         n_calls (int): Number of iterations in bayesian hyperparameter optimisation algorithm.
         n_initial_points (int): Number of initial steps in bayesian hyperparameter optimisation algorithm.
         seed (int): Random state.
-        output_model_path (uri_folder): Path where model weights are placed.
-        output_metadata_path (uri_folder): Path where metadata is placed.
+        output_path (uri_folder): Path where model weights and metadata are placed.
 
     Returns:
         _type_: _description_
     """
     # Create output paths
-    Path(output_model_path).mkdir(parents=True, exist_ok=True)
-    Path(output_metadata_path).mkdir(parents=True, exist_ok=True)
+    Path(output_path).mkdir(parents=True, exist_ok=True)
+    Path(output_path).mkdir(parents=True, exist_ok=True)
     Path('./output_experiment').mkdir(parents=True, exist_ok=True)
 
     # Import data from input
@@ -250,11 +248,11 @@ def main(
     model.fit(X, y)
     # Generate model output
     log.info(f"Dump model:")
-    joblib.dump(model, os.path.join(output_model_path, 'pretrained_model.joblib'))
+    joblib.dump(model, os.path.join(output_path, 'pretrained_model.joblib'))
     # Generate metadata output
     framework_name = re.findall("\'(.*?)\'",str(getattr(sys.modules[__name__], model_name)))[0].split('.')[0]
     log.info(f"Dump metadata:")
-    with open(os.path.join(output_metadata_path, 'metadata.json'), 'w', encoding='utf8') as f:
+    with open(os.path.join(output_path, 'metadata.json'), 'w', encoding='utf8') as f:
         json.dump({
             **{'params':{k:eval(v) for k,v in exp_dct['params'].items()}},
             **{'metrics':{k:eval(v) for k,v in exp_dct['metrics'].items()}},

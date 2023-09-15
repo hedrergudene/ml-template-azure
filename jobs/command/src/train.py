@@ -282,7 +282,7 @@ def main(
     azureml.core.Model.register(
         workspace=ws,
         model_name=experiment_name,                                             # Name of the registered model in your workspace.
-        model_path=os.path.join('output', 'pretrained_model.joblib'),           # Local file to upload and register as a model.
+        model_path='./output',                                                  # Local file to upload and register as a model.
         model_framework=metadata_dct['framework']['name'],                      # Framework used to create the model.
         model_framework_version=metadata_dct['framework']['version'],           # Version of scikit-learn used to create the model.
         #sample_input_dataset=input_dataset,
