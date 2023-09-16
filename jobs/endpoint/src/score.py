@@ -4,7 +4,6 @@ import logging as log
 import sys
 import json
 import numpy as np
-import azureml.core
 import joblib
 
 # Setup logs
@@ -45,13 +44,13 @@ def init():
 def run(raw_data):
     """
     This function is called for every invocation of the endpoint to perform the actual scoring/prediction.
-    In the example we extract the data from the json input and call the scikit-learn model's predict()
+    In the example we extract the data from the json input, call the model's predict_proba()
     method and return the result back
     """
     log.info("Request received")
     data = json.loads(raw_data)["data"]
     data = (np.array(data)-mu_X)/sigma_X
-    result = model.predict_proba(data).flatten()[-1]
+    result = model.predict_proba(data).flatten()
     result = result*sigma_y+mu_y
     log.info("Request processed")
     return result
