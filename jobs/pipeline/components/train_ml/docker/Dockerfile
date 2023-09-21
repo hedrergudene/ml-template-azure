@@ -10,4 +10,4 @@ RUN pip install 'azure-ai-ml==1.4.0' \
                 'protobuf==3.20.0' \
                 'plotly-express==0.4.1' \
                 'pyyaml==5.4.1' \
-                'fire==0.4.0' 
+                'fire==0.4.0'

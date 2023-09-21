@@ -1,6 +1,7 @@
 # Libraries
 import yaml
 import sys
+import os
 import json
 import logging as log
 from azure.identity import DefaultAzureCredential
@@ -50,6 +51,24 @@ def main(
         workspace_name=config_dct['azure']['aml_workspace_name']
     )
 
+    # Register environments
+    log.info("Check environment availability:")
+    envs = [x.name for x in ml_client.environments.list()]
+    env_name = "command_env"
+    if env_name not in envs:
+        log.info(f"Environment for component {env_name} not found. Creating...")
+        ml_client.environments.create_or_update(
+            Environment(
+                image="mcr.microsoft.com/azureml/curated/sklearn-1.0:11",
+                conda_file="conda.yaml"
+            )
+        )
+        log.info(f"Environment for component {env_name} created.")
+        env_version = "1"
+    else:
+        env_version = str(max([int(x.version) for x in ml_client.environments.list(name=env_name)]))
+        log.info(f"Environment for component {env_name} was found. Latest version is {env_version}.")
+
     # Job config
     log.info(f"Define command job configuration:")
     job = command(
@@ -66,10 +85,7 @@ def main(
             'seed' : config_dct['train']['seed']
         },
         compute=config_dct['azure']['computing']['cpu_cluster_aml_id'],
-        environment=Environment(
-            image="mcr.microsoft.com/azureml/curated/sklearn-1.0:11",
-            conda_file="conda.yaml"
-        ),
+        environment= Environment(image=f"{env_name}:{env_version}"),
         code="./src",
         command="python train.py "
                 "--subscription_id ${{inputs.subscription_id}} "

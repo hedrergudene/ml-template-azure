@@ -3,8 +3,10 @@ import yaml
 import sys
 import json
 import logging as log
+import os
 from azure.identity import DefaultAzureCredential
 from azure.ai.ml import MLClient, load_component
+from azure.ai.ml.entities import Environment, BuildContext, AmlCompute
 from azure.core.exceptions import ResourceNotFoundError
 from azure.ai.ml.dsl import pipeline
 import fire
@@ -52,8 +54,54 @@ def main(
     try:
         cpu_cluster = ml_client.compute.get(config_dct['azure']['computing']['cpu_cluster_aml_id'])
     except ResourceNotFoundError:
-        log.error(f"CPU virtual machine {config_dct['azure']['computing']['cpu_cluster_aml_id']} not found.")
-        raise ResourceNotFoundError(f"CPU virtual machine {config_dct['azure']['computing']['cpu_cluster_aml_id']} not found.")
+        log.warning(f"CPU virtual machine {config_dct['azure']['computing']['cpu_cluster_aml_id']} not found. Creating compute cluster...")
+        # Let's create the Azure ML compute object with the intended parameters
+        cpu_cluster = AmlCompute(
+            # Name assigned to the compute cluster
+            name=config_dct['azure']['computing']['cpu_cluster_aml_id'],
+            # VM Family
+            size="STANDARD_DS3_v2",
+            # Minimum running nodes when there is no job running
+            min_instances=0,
+            # Nodes in cluster
+            max_instances=2,
+            # How many seconds will the node running after the job termination
+            idle_time_before_scale_down=180,
+            # Dedicated or LowPriority. The latter is cheaper but there is a chance of job termination
+            tier="Dedicated",
+        )
+
+        # Now, we pass the object to MLClient's create_or_update method
+        cpu_cluster = ml_client.begin_create_or_update(cpu_cluster).result()
+        log.info(f"Comput cluster {config_dct['azure']['computing']['cpu_cluster_aml_id']} created successfully.")
+        
+
+    # Register environments
+    log.info("Check environments availability:")
+    envs = [x.name for x in ml_client.environments.list()]
+    env2version = {}
+    for x in os.listdir('./components'):
+        env_name = f"{x}_env"
+        if env_name not in envs:
+            log.info(f"Environment for component {x} not found. Creating...")
+            ml_client.environments.create_or_update(
+                Environment(
+                    build=BuildContext(path=f"./components/{x}/docker"),
+                    name=env_name
+                )
+            )
+            log.info(f"Environment for component {x} created.")
+            env2version[env_name] = "1"
+        else:
+            env2version[env_name] = str(max([int(x.version) for x in ml_client.environments.list(name=env_name)]))
+            log.info(f"Environment for component {x} was found. Latest version is {env2version[env_name]}.")
+            if int(env2version[env_name])>1:
+                log.info(f"Updating environment for component {x} to latest version:")
+                with open(f"./components/{x}/{x}.yaml") as fenv:
+                    env_dct = yaml.load(fenv, Loader=yaml.FullLoader)
+                env_dct['environment']['image'] = f"{env_name}:{env2version[env_name]}"
+                with open(f"./components/{x}/{x}.yaml", 'w') as fenv:
+                    yaml.dump(env_dct, fenv)
 
     # Fetch components
     read_data_comp = load_component(source="./components/read_data/read_data.yaml")

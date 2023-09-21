@@ -50,6 +50,24 @@ def main(
         workspace_name=config_dct['azure']['aml_workspace_name']
     )
 
+    # Register environments
+    log.info("Check environment availability:")
+    envs = [x.name for x in ml_client.environments.list()]
+    env_name = "endpint_env"
+    if env_name not in envs:
+        log.info(f"Environment for component {env_name} not found. Creating...")
+        ml_client.environments.create_or_update(
+            Environment(
+                build=BuildContext(path=f"./docker"),
+                name=env_name
+            )
+        )
+        log.info(f"Environment for component {env_name} created.")
+        env_version = "1"
+    else:
+        env_version = str(max([int(x.version) for x in ml_client.environments.list(name=env_name)]))
+        log.info(f"Environment for component {env_name} was found. Latest version is {env_version}.")
+
     # Create an online endpoint
     endpoint = ManagedOnlineEndpoint(
         name=config_dct['endpoint']['name'], 
@@ -65,7 +83,7 @@ def main(
     )
 
     # Define environment
-    env = Environment(build=BuildContext(path='./docker'))
+    env = Environment(image=f"{env_name}:{env_version}")
 
     # Deployment configuration
     dpl = ManagedOnlineDeployment(

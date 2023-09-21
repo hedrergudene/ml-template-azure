@@ -124,38 +124,16 @@ For components that require only CPU units, we follow a structure like this:
 ```
   ├──<component-name>              # Where component lies
   │   ├── .amlignore               # Data not to be included in AML component creation
-  │   ├── conda.yaml               # Conda environment and dependencies definition
+  │   └── docker                   
+  │       └── Dockerfile           # Environment and dependencies definition
   │   ├── <component-name>.yaml    # Component configuration file
   │   │                            
   │   └── main.py                  # Entrypoint
 
 ```
 
-For those components that require GPU acceleration, the corresponding *script* that launches the *job* with the pipeline that contains it is prepared to automatically detect what type of virtual machine is being used, and suitably adapt the configuration file associated with these components. All available VMs in your timezone can be collected from the following [link](https://azureprice.net/).
 
-Now let's see how a component with GPU(s) support is organized:
 
-```
-  ├──<component-name>                         
-  │   ├── config                              
-  │   │   ├── multi_gpu_config.yaml           # Accelerate config for DistributedDataParallel
-  │   │   └── single_gpu_config.yaml          # Accelerate config for single-GPU training
-  │   ├── docker      
-  │   │   └── Dockerfile                      # File with base image and dependencies (AML will do everything else)
-  │   ├── src                                 # Scripts containing additional functionalities
-  │   │   ├── dataset.py
-  │   │   ├── fitter.py
-  │   │   ├── model.py  
-  │   │   ...
-  │   │   └── utils.py
-  │   ├── .amlignore                             
-  │   ├── <component-name>.yaml               # Single-GPU component definition
-  │   ├── <component-name>_distributed.yaml   # Multi-GPU component definition
-  │   └── main.py                             # Entrypoint
-  
-```
-
-For potential integrations with large-scale training, requiring specific use of optimizers such as [*DeepSpeed*](https://www.deepspeed.ai/) or other types of parallelization such as *DistributedTensorParallel*, please request assistance from the contributors of this repo, to adapt both the configuration files and the virtual execution environment to your needs.
 
 ### Register
 
@@ -181,8 +159,8 @@ Despite including and end-to-end solution to model design in AML, the following 
 
 - [X] Adapt `build_MLTable` function in pipeline job script to replicate Data Asset config file (done by @demstalferez).
 - [X] Monolitic code snippet using MLTable.
-- [ ] Make preprocessing flexible enough to ingest categorical features, and either perform label or one-hot encoding.
-- [ ] Inference endpoint creation.
+- [X] Inference endpoint creation.
+- [X] Automatic provisioning and register of compute clusters and environments.
 - [ ] User-friendly app development.
 
 ## License
