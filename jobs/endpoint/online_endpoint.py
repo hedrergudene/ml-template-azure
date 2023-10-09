@@ -53,7 +53,7 @@ def main(
     # Register environments
     log.info("Check environment availability:")
     envs = [x.name for x in ml_client.environments.list()]
-    env_name = "endpint_env"
+    env_name = "endpoint_env"
     if env_name not in envs:
         log.info(f"Environment for component {env_name} not found. Creating...")
         ml_client.environments.create_or_update(
