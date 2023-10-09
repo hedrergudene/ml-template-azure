@@ -77,10 +77,7 @@ def main(
     ml_client.online_endpoints.begin_create_or_update(endpoint)
 
     # Fetch model
-    model = Model(
-        name=config_dct['model']['name'],
-        version=config_dct['model']['version']
-    )
+    model = ml_client.models.get(config_dct['model']['name'], config_dct['model']['version'])
 
     # Define environment
     env = Environment(image=f"{env_name}:{env_version}")
