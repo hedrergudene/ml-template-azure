@@ -32,8 +32,7 @@ code: ./
 
 # Environment takes care of source image and dependencies
 # https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-environments-v2?view=azureml-api-2&tabs=cli
-environment:
-  image: read_data_env:1
+environment: azureml:read_data_env:1
 
 # Cluster instance
 compute: azureml:cpu-cluster

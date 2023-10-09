@@ -1,5 +1,5 @@
 # Base image
-FROM python:3.11.4-slim
+FROM mcr.microsoft.com/azureml/curated/sklearn-1.0:11
 
 # Install dependencies
 RUN pip install 'azureml-core==1.47.0' \
