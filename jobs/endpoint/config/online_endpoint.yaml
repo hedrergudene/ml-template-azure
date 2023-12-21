@@ -14,8 +14,8 @@ endpoint:
     green: 0
 deployment:
   name: 'blue' # blue or green
-  instance_type: "Standard_DS3_v2"
-  instance_count: 2
+  instance_type: "Standard_DS1_v2"
+  instance_count: 1
 autoscale:
   name: 'iot_autoscale'
   capacity:
